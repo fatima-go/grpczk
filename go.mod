@@ -1,4 +1,4 @@
-module throosea.com/grpczk
+module fatima-go/grpczk
 
 go 1.17
 
