@@ -1,4 +1,4 @@
-module fatima-go/grpczk
+module github.com/fatima-go/grpczk
 
 go 1.17
 
