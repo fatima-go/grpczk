@@ -65,7 +65,7 @@ func registServiceResolver(serviceName string, initialServerList []string) {
 func unregistServiceResolver(serviceName string) {
 	rmu.Lock()
 	defer rmu.Unlock()
-	resolveMap[serviceName] = nil
+	delete(resolveMap, serviceName)
 	zk.DefaultLogger.Printf("resolver unregisted %s", serviceName)
 }
 
@@ -79,7 +79,7 @@ func updateServerList(serviceName string, newServerList []string) error {
 
 	updater, ok := resolveMap[serviceName]
 	if !ok {
-		return errNotfoundServiceName
+		return nil // nothing...
 	}
 
 	return updater.UpdateServerList(newServerList)

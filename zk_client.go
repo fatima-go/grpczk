@@ -205,6 +205,11 @@ func (z *ZkClientServant) watchNode(znodePath string, children []string, ch <-ch
 			continue
 		}
 
+		// 연결이 종료되었을 경우 updateServerList 호출을 skip
+		if e.State == zk.StateDisconnected {
+			continue
+		}
+
 		err = updateServerList(znodePath, children)
 		if err != nil {
 			if z.errorLogger != nil {
