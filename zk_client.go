@@ -194,11 +194,15 @@ func (z *ZkClientServant) watchNode(znodePath string, children []string, ch <-ch
 			zk.DefaultLogger.Printf("[%s] zk error : %s", znodePath, err.Error())
 			// TODO : znode watch만 다시 하면 될거 같은데...
 			z.zkServant.Close()
+
+			// 감시 해야 할 znode path 가 존재하지 않는다면 리턴
+			if !hasServiceResolver(znodePath) {
+				return
+			}
+
 			err = z.zkServant.Connect()
 			time.Sleep(time.Second * 5)
 			continue
-			//z.Connect(znodePath)
-			//return
 		}
 
 		if e.Type&zk.EventNodeChildrenChanged != zk.EventNodeChildrenChanged {
