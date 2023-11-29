@@ -117,6 +117,13 @@ func (z *ZkServant) Connect() error {
 }
 
 func (z *ZkServant) Close() {
+	z.mutex.Lock()
+	defer z.mutex.Unlock()
+
+	if z.zkConn == nil {
+		return
+	}
+
 	z.zkConn.Close()
 	z.zkConn = nil
 	z.sessionAvailable = false

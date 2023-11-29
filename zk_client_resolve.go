@@ -73,6 +73,14 @@ var (
 	errNotfoundServiceName = fmt.Errorf("not found service name while resolving")
 )
 
+func hasServiceResolver(serviceName string) bool {
+	rmu.Lock()
+	defer rmu.Unlock()
+
+	_, ok := resolveMap[serviceName]
+	return ok
+}
+
 func updateServerList(serviceName string, newServerList []string) error {
 	rmu.Lock()
 	defer rmu.Unlock()
