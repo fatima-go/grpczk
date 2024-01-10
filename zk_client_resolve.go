@@ -113,6 +113,7 @@ func updateServerList(serviceName string, newServerList []string) error {
 
 func init() {
 	resolveMap = make(map[string]ServerListUpdater)
+	connectionHelperMap = make(map[string]ZKConnectionHelper)
 	resolver.Register(&floGrpcResolverBuilder{})
 }
 
