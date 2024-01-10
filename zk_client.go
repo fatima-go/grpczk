@@ -222,13 +222,7 @@ func (z *ZkClientServant) watchNode(znodePath string, children []string, ch <-ch
 			continue
 		}
 
-		watchList := children
-		helper, ok := connectionHelperMap[znodePath]
-		if ok {
-			// connection helper가 존재할 경우 서버 리스트 업데이트를 helper로 요청한 후 결과를 사용한다
-			watchList = helper.UpdateServerList(watchList)
-		}
-		err = updateServerList(znodePath, watchList)
+		err = updateServerList(znodePath, children)
 		if err != nil {
 			if z.errorLogger != nil {
 				z.errorLogger.Printf("[%s] fail to update service list [addr.len=%d] : %s", znodePath, len(children), err.Error())
