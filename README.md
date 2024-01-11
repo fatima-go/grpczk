@@ -2,6 +2,8 @@
 apache zookeeper 를 통해서 advertise 된 grpc 서버의 정보를 실시간으로 감시하여 grpc client에서 grpc server list 를 갱신하도록 기능을 제공한다
 
 # release #
+2024.1.11 v1.0.4
+- [znode 의 등록된 서버를 확장하는 기능 제공](https://github.com/fatima-go/grpczk/issues/6)
 2023.11.29 v1.0.3
 - [zkServant.Close() 시에 nil 포인트 에러](https://github.com/fatima-go/grpczk/issues/3)
 2023.11.09 v1.0.2
