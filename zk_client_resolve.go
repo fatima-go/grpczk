@@ -35,9 +35,15 @@ const (
 	exampleServiceName = "lb.example.grpc.io"
 )
 
+// ZKServiceHelper zk 연결시 추가적으로 사용할 수 있는 인터페이스를 제공한다
+type ZKServiceHelper interface {
+	GetBalancerName() string // balancer name 제공 빈 값이면 디폴트 round robin 사용
+}
+
 // resolveMap
 // key : grpcServiceName(znodepath), value : grpczkResolver
 var resolveMap map[string]ServerListUpdater
+var serviceHelperMap map[string]ZKServiceHelper
 
 type ServerListUpdater interface {
 	SetConnection(resolver.ClientConn)
@@ -51,6 +57,12 @@ func isEmptyResolveMap() bool {
 	return len(resolveMap) == 0
 }
 
+func registServiceHelper(serviceName string, helper ZKServiceHelper) {
+	rmu.Lock()
+	defer rmu.Unlock()
+	serviceHelperMap[serviceName] = helper
+}
+
 func registServiceResolver(serviceName string, initialServerList []string) {
 	rmu.Lock()
 	defer rmu.Unlock()
@@ -60,6 +72,12 @@ func registServiceResolver(serviceName string, initialServerList []string) {
 	r.initialAddrList = initialServerList
 	resolveMap[serviceName] = r
 	zk.DefaultLogger.Printf("resolver registed %s", serviceName)
+}
+
+func unregistServiceHelper(serviceName string) {
+	rmu.Lock()
+	defer rmu.Unlock()
+	delete(serviceHelperMap, serviceName)
 }
 
 func unregistServiceResolver(serviceName string) {
@@ -95,6 +113,7 @@ func updateServerList(serviceName string, newServerList []string) error {
 
 func init() {
 	resolveMap = make(map[string]ServerListUpdater)
+	serviceHelperMap = make(map[string]ZKServiceHelper)
 	resolver.Register(&floGrpcResolverBuilder{})
 }
 
