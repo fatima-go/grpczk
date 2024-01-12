@@ -88,7 +88,7 @@ func (z *ZkClientServant) Disconnect(znodePath string) {
 	zm.Lock()
 	defer zm.Unlock()
 
-	unregistConnectionHelper(znodePath)
+	unregistServiceHelper(znodePath)
 	unregistServiceResolver(znodePath)
 
 	if isEmptyResolveMap() {
@@ -101,7 +101,7 @@ func (z *ZkClientServant) Disconnect(znodePath string) {
 
 func (z *ZkClientServant) ConnectWithHelper(znodePath string, zkHelper ZKServiceHelper, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if zkHelper != nil {
-		registConnectionHelper(znodePath, zkHelper)
+		registServiceHelper(znodePath, zkHelper)
 	}
 	return z.Connect(znodePath, opts...)
 }

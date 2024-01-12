@@ -57,7 +57,7 @@ func isEmptyResolveMap() bool {
 	return len(resolveMap) == 0
 }
 
-func registConnectionHelper(serviceName string, helper ZKServiceHelper) {
+func registServiceHelper(serviceName string, helper ZKServiceHelper) {
 	rmu.Lock()
 	defer rmu.Unlock()
 	serviceHelperMap[serviceName] = helper
@@ -74,7 +74,7 @@ func registServiceResolver(serviceName string, initialServerList []string) {
 	zk.DefaultLogger.Printf("resolver registed %s", serviceName)
 }
 
-func unregistConnectionHelper(serviceName string) {
+func unregistServiceHelper(serviceName string) {
 	rmu.Lock()
 	defer rmu.Unlock()
 	delete(serviceHelperMap, serviceName)
