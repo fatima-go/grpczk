@@ -35,16 +35,15 @@ const (
 	exampleServiceName = "lb.example.grpc.io"
 )
 
-// ZKConnectionHelper zk 연결시 추가적으로 사용할 수 있는 인터페이스를 제공한다
-type ZKConnectionHelper interface {
-	UpdateServerList(watchList []string) []string // 서버 목록을 수정해서 리턴된 서버 목록을 사용하도록 함수 제공
-	GetBalancerName() string                      // balancer name 제공 빈 값이면 디폴트 round robin 사용
+// ZKServiceHelper zk 연결시 추가적으로 사용할 수 있는 인터페이스를 제공한다
+type ZKServiceHelper interface {
+	GetBalancerName() string // balancer name 제공 빈 값이면 디폴트 round robin 사용
 }
 
 // resolveMap
 // key : grpcServiceName(znodepath), value : grpczkResolver
 var resolveMap map[string]ServerListUpdater
-var connectionHelperMap map[string]ZKConnectionHelper
+var serviceHelperMap map[string]ZKServiceHelper
 
 type ServerListUpdater interface {
 	SetConnection(resolver.ClientConn)
@@ -58,10 +57,10 @@ func isEmptyResolveMap() bool {
 	return len(resolveMap) == 0
 }
 
-func registConnectionHelper(serviceName string, helper ZKConnectionHelper) {
+func registConnectionHelper(serviceName string, helper ZKServiceHelper) {
 	rmu.Lock()
 	defer rmu.Unlock()
-	connectionHelperMap[serviceName] = helper
+	serviceHelperMap[serviceName] = helper
 }
 
 func registServiceResolver(serviceName string, initialServerList []string) {
@@ -78,7 +77,7 @@ func registServiceResolver(serviceName string, initialServerList []string) {
 func unregistConnectionHelper(serviceName string) {
 	rmu.Lock()
 	defer rmu.Unlock()
-	delete(connectionHelperMap, serviceName)
+	delete(serviceHelperMap, serviceName)
 }
 
 func unregistServiceResolver(serviceName string) {
@@ -114,7 +113,7 @@ func updateServerList(serviceName string, newServerList []string) error {
 
 func init() {
 	resolveMap = make(map[string]ServerListUpdater)
-	connectionHelperMap = make(map[string]ZKConnectionHelper)
+	serviceHelperMap = make(map[string]ZKServiceHelper)
 	resolver.Register(&floGrpcResolverBuilder{})
 }
 
@@ -150,12 +149,6 @@ func (r *grpczkResolver) SetConnection(cc resolver.ClientConn) {
 }
 
 func (r *grpczkResolver) UpdateServerList(addrList []string) error {
-	helper, ok := connectionHelperMap[r.serviceName]
-	if ok {
-		// connection helper가 존재할 경우 서버 리스트 업데이트를 helper로 요청한 후 결과를 사용한다
-		addrList = helper.UpdateServerList(addrList)
-	}
-
 	if r.cc == nil {
 		return fmt.Errorf("%s has no ClientConn", r.serviceName)
 	}
