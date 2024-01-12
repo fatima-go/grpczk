@@ -58,14 +58,16 @@ func NewZkClientServant(zkIpList string) *ZkClientServant {
 
 	clientServant := &ZkClientServant{}
 	clientServant.zkServant = NewZkServant(zkIpList)
+	clientServant.serviceConfig = grpcServiceConfig // default round_robin config
 
 	zkClientServant = clientServant
 	return clientServant
 }
 
 type ZkClientServant struct {
-	zkServant   *ZkServant
-	errorLogger zk.Logger
+	zkServant     *ZkServant
+	serviceConfig string
+	errorLogger   zk.Logger
 }
 
 func (z *ZkClientServant) SetLogger(logger zk.Logger) *ZkClientServant {
@@ -102,6 +104,11 @@ func (z *ZkClientServant) Disconnect(znodePath string) {
 func (z *ZkClientServant) ConnectWithHelper(znodePath string, zkHelper ZKConnectionHelper, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	if zkHelper != nil {
 		registConnectionHelper(znodePath, zkHelper)
+		balancerName := zkHelper.GetBalancerName()
+		if len(balancerName) > 0 {
+			zk.DefaultLogger.Printf("using balancer %s", balancerName)
+			z.serviceConfig = fmt.Sprintf(`{"loadBalancingConfig": [{"%s":{}}]}`, balancerName)
+		}
 	}
 	return z.Connect(znodePath, opts...)
 }
@@ -141,7 +148,7 @@ func (z *ZkClientServant) Connect(znodePath string, opts ...grpc.DialOption) (*g
 
 	dialOpts := make([]grpc.DialOption, 0)
 	dialOpts = append(dialOpts, grpc.WithBlock())
-	dialOpts = append(dialOpts, grpc.WithDefaultServiceConfig(grpcServiceConfig))
+	dialOpts = append(dialOpts, grpc.WithDefaultServiceConfig(z.serviceConfig))
 	if len(opts) > 0 {
 		dialOpts = append(dialOpts, opts...)
 	}

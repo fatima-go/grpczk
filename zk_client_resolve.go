@@ -38,6 +38,7 @@ const (
 // ZKConnectionHelper zk 연결시 추가적으로 사용할 수 있는 인터페이스를 제공한다
 type ZKConnectionHelper interface {
 	UpdateServerList(watchList []string) []string // 서버 목록을 수정해서 리턴된 서버 목록을 사용하도록 함수 제공
+	GetBalancerName() string                      // balancer name 제공 빈 값이면 디폴트 round robin 사용
 }
 
 // resolveMap
