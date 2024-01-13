@@ -37,7 +37,8 @@ const (
 
 // ZKServiceHelper zk 연결시 추가적으로 사용할 수 있는 인터페이스를 제공한다
 type ZKServiceHelper interface {
-	GetBalancerName() string // balancer name 제공 빈 값이면 디폴트 round robin 사용
+	UpdateServerList(foundAddrList []string) []string // 서버 목록을 수정한 결과를 받는다
+	GetBalancerName() string                          // balancer name 제공 빈 값이면 디폴트 round robin 사용
 }
 
 // resolveMap
@@ -151,6 +152,11 @@ func (r *grpczkResolver) SetConnection(cc resolver.ClientConn) {
 func (r *grpczkResolver) UpdateServerList(addrList []string) error {
 	if r.cc == nil {
 		return fmt.Errorf("%s has no ClientConn", r.serviceName)
+	}
+
+	helper, ok := serviceHelperMap[r.serviceName]
+	if ok {
+		addrList = helper.UpdateServerList(addrList)
 	}
 
 	zk.DefaultLogger.Printf("%s update server list : %v", r.serviceName, addrList)
