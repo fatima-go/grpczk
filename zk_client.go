@@ -26,6 +26,7 @@ package grpczk
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/go-zookeeper/zk"
 	"google.golang.org/grpc"
@@ -56,16 +57,27 @@ func NewZkClientServant(zkIpList string) *ZkClientServant {
 		return zkClientServant
 	}
 
-	clientServant := &ZkClientServant{}
+	clientServant := &ZkClientServant{znodeContextMap: make(map[string]*znodeContext)}
 	clientServant.zkServant = NewZkServant(zkIpList)
 
 	zkClientServant = clientServant
 	return clientServant
 }
 
+//goland:noinspection SpellCheckingInspection
+type znodeContext struct {
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+
+	wg sync.WaitGroup
+}
+
+//goland:noinspection SpellCheckingInspection
 type ZkClientServant struct {
 	zkServant   *ZkServant
 	errorLogger zk.Logger
+
+	znodeContextMap map[string]*znodeContext
 }
 
 func (z *ZkClientServant) SetLogger(logger zk.Logger) *ZkClientServant {
@@ -85,8 +97,14 @@ func (z *ZkClientServant) SetDebug(debug bool) *ZkClientServant {
 }
 
 func (z *ZkClientServant) Disconnect(znodePath string) {
+	if zkClientServant == nil {
+		return
+	}
+
 	zm.Lock()
 	defer zm.Unlock()
+
+	z.stopWatching(znodePath)
 
 	unregistServiceHelper(znodePath)
 	unregistServiceResolver(znodePath)
@@ -178,9 +196,18 @@ func (z *ZkClientServant) Connect(znodePath string, opts ...grpc.DialOption) (*g
 	)
 
 	if err == nil {
+		zm.Lock()
+		zCtx := z.registerZnodeContext(znodePath)
+		zm.Unlock()
+
 		// start watch node...
 		go func() {
-			z.watchNode(znodePath, children, ch)
+			zCtx.wg.Add(1)
+			defer func() {
+				zCtx.wg.Done()
+				zk.DefaultLogger.Printf("[%s] znode wathcer has been stopped", znodePath)
+			}()
+			z.watchNode(zCtx.ctx, znodePath, children, ch)
 		}()
 	}
 
@@ -199,49 +226,75 @@ func (z *ZkClientServant) SetData(znodePath string, data []byte) error {
 	return z.zkServant.SetData(znodePath, data)
 }
 
-func (z *ZkClientServant) watchNode(znodePath string, children []string, ch <-chan zk.Event) {
+func (z *ZkClientServant) watchNode(ctx context.Context, znodePath string, children []string, ch <-chan zk.Event) {
 	var err error
 
-	defer func() {
-		zk.DefaultLogger.Printf("[%s] stop watching node", znodePath)
-	}()
-
 	for {
-		e := <-ch
-		children, ch, err = z.zkServant.ChildrenW(znodePath)
-		if err != nil {
-			zk.DefaultLogger.Printf("[%s] zk error : %s", znodePath, err.Error())
-			// TODO : znode watch만 다시 하면 될거 같은데...
-			z.zkServant.Close()
+		select {
+		case e := <-ch:
+			children, ch, err = z.zkServant.ChildrenW(znodePath)
+			if err != nil {
+				zk.DefaultLogger.Printf("[%s] zk error : %s", znodePath, err.Error())
+				// TODO : znode watch만 다시 하면 될거 같은데...
+				z.zkServant.Close()
 
-			// 감시 해야 할 znode path 가 존재하지 않는다면 리턴
-			if !hasServiceResolver(znodePath) {
-				return
+				// 감시 해야 할 znode path 가 존재하지 않는다면 리턴
+				if !hasServiceResolver(znodePath) {
+					return
+				}
+
+				err = z.zkServant.Connect()
+				time.Sleep(time.Second * 5)
+				continue
 			}
 
-			err = z.zkServant.Connect()
-			time.Sleep(time.Second * 5)
-			continue
-		}
-
-		if e.Type&zk.EventNodeChildrenChanged != zk.EventNodeChildrenChanged {
-			continue
-		}
-
-		// 연결이 종료되었을 경우 updateServerList 호출을 skip
-		if e.State == zk.StateDisconnected {
-			continue
-		}
-
-		err = updateServerList(znodePath, children)
-		if err != nil {
-			if z.errorLogger != nil {
-				z.errorLogger.Printf("[%s] fail to update service list [addr.len=%d] : %s", znodePath, len(children), err.Error())
+			if e.Type&zk.EventNodeChildrenChanged != zk.EventNodeChildrenChanged {
+				continue
 			}
-			zk.DefaultLogger.Printf("[%s] fail to update service list : %s. children=%v", znodePath, err.Error(), children)
-			if err == errNotfoundServiceName {
-				return
+
+			// 연결이 종료되었을 경우 updateServerList 호출을 skip
+			if e.State == zk.StateDisconnected {
+				continue
 			}
+
+			err = updateServerList(znodePath, children)
+			if err != nil {
+				if z.errorLogger != nil {
+					z.errorLogger.Printf("[%s] fail to update service list [addr.len=%d] : %s", znodePath, len(children), err.Error())
+				}
+				zk.DefaultLogger.Printf("[%s] fail to update service list : %s. children=%v", znodePath, err.Error(), children)
+				if errors.Is(err, errNotfoundServiceName) {
+					return
+				}
+			}
+
+		case <-ctx.Done():
+			return
 		}
 	}
+}
+
+//goland:noinspection SpellCheckingInspection
+func (z *ZkClientServant) registerZnodeContext(znode string) *znodeContext {
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	zCtx := &znodeContext{
+		ctx:       ctx,
+		ctxCancel: ctxCancel,
+		wg:        sync.WaitGroup{},
+	}
+	z.znodeContextMap[znode] = zCtx
+	return zCtx
+}
+
+//goland:noinspection SpellCheckingInspection
+func (z *ZkClientServant) stopWatching(znode string) {
+	zCtx, exists := z.znodeContextMap[znode]
+	if !exists {
+		return
+	}
+
+	zCtx.ctxCancel()
+	zCtx.wg.Wait()
+
+	delete(z.znodeContextMap, znode)
 }
