@@ -190,7 +190,7 @@ func (z *ZkServant) reconnectUntilSuccess() {
 			break
 		}
 
-		zk.DefaultLogger.Printf("zk connect error : %s", err.Error())
+		z.errorLogger.Printf("reconnectUntilSuccess error : %s", err.Error())
 		time.Sleep(time.Second)
 	}
 }
@@ -248,7 +248,6 @@ func (z *ZkServant) createEphemeralOnce(path string) error {
 			zk.DefaultLogger.Printf("ephemeral path exist. try to delete %s", path)
 			err = z.zkConn.Delete(path, zkVersionAll)
 			if err != nil {
-				zk.DefaultLogger.Printf("fail to delete node %s : %s", path, err.Error())
 				return err
 			}
 
