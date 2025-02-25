@@ -3,6 +3,9 @@ apache zookeeper 를 통해서 advertise 된 grpc 서버의 정보를 실시간�
 
 # release #
 
+2025.02.25 v1.0.7
+- [disconnect 되었을때 연결 재설정 코드 필요](https://github.com/fatima-go/grpczk/issues/13)
+
 2024.07.26 v1.0.6
 - [zk_client 에서 nil 에러](https://github.com/fatima-go/grpczk/issues/11)
 

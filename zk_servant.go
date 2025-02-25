@@ -25,6 +25,7 @@ package grpczk
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-zookeeper/zk"
 	"reflect"
@@ -169,16 +170,29 @@ func (z *ZkServant) processZkEvent(event zk.Event) bool {
 		zk.DefaultLogger.Printf("zk auth failed")
 	case zk.StateDisconnected:
 		zk.DefaultLogger.Printf("zk disconnected")
+		fallthrough
 	case zk.StateExpired:
 		zk.DefaultLogger.Printf("zk expired")
 		z.zkConn.Close()
 		z.zkConn = nil
 		z.sessionAvailable = false
-		z.Connect()
+		go z.reconnectUntilSuccess()
 		return false
 	}
 
 	return true
+}
+
+func (z *ZkServant) reconnectUntilSuccess() {
+	for {
+		err := z.Connect()
+		if err == nil {
+			break
+		}
+
+		z.errorLogger.Printf("reconnectUntilSuccess error : %s", err.Error())
+		time.Sleep(time.Second)
+	}
 }
 
 func (z *ZkServant) reCreateAllEphemerals() {
@@ -230,6 +244,20 @@ func (z *ZkServant) createEphemeralOnce(path string) error {
 	acl := zk.WorldACL(zk.PermAll)
 	_, err := z.zkConn.Create(path, nil, zk.FlagEphemeral, acl)
 	if err != nil {
+		if errors.Is(err, zk.ErrNodeExists) { // 생성하려는 노드가 이미 존재할 경우
+			zk.DefaultLogger.Printf("ephemeral path exist. try to delete %s", path)
+			err = z.zkConn.Delete(path, zkVersionAll)
+			if err != nil {
+				return err
+			}
+
+			// 한번 더 생성 시도
+			_, err = z.zkConn.Create(path, nil, zk.FlagEphemeral, acl)
+			if err == nil {
+				zk.DefaultLogger.Printf("zk create ephemeral path : %s", path)
+				return nil
+			}
+		}
 		return err
 	}
 
