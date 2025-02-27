@@ -121,14 +121,7 @@ func (z *ZkServant) Close() {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
 
-	if z.zkConn == nil {
-		return
-	}
-
-	z.zkConn.Close()
-	z.zkConn = nil
-	z.sessionAvailable = false
-	z.state = zk.StateDisconnected
+	z.forceCloseZkConn()
 	z.pathSet = nil
 }
 
@@ -173,13 +166,24 @@ func (z *ZkServant) processZkEvent(event zk.Event) bool {
 		fallthrough
 	case zk.StateExpired:
 		zk.DefaultLogger.Printf("zk expired")
-		z.zkConn.Close()
-		z.zkConn = nil
-		z.sessionAvailable = false
-		go z.reconnectUntilSuccess()
+		if z.forceCloseZkConn() {
+			go z.reconnectUntilSuccess()
+		}
 		return false
 	}
 
+	return true
+}
+
+func (z *ZkServant) forceCloseZkConn() bool {
+	if z.zkConn == nil {
+		return false
+	}
+
+	z.zkConn.Close()
+	z.zkConn = nil
+	z.sessionAvailable = false
+	z.state = zk.StateDisconnected
 	return true
 }
 
