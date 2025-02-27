@@ -3,6 +3,9 @@ apache zookeeper 를 통해서 advertise 된 grpc 서버의 정보를 실시간�
 
 # release #
 
+2025.02.27 v1.0.8
+- [명시적 Close() 호출 이후에 nil 포인트 에러 대응](https://github.com/fatima-go/grpczk/issues/15)
+- 
 2025.02.25 v1.0.7
 - [disconnect 되었을때 연결 재설정 코드 필요](https://github.com/fatima-go/grpczk/issues/13)
 
