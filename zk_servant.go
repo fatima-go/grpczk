@@ -176,6 +176,9 @@ func (z *ZkServant) processZkEvent(event zk.Event) bool {
 }
 
 func (z *ZkServant) forceCloseZkConn() bool {
+	if z.errorLogger != nil {
+		z.errorLogger.Printf("forceCloseZkConn")
+	}
 	if z.zkConn == nil {
 		return false
 	}
@@ -189,13 +192,17 @@ func (z *ZkServant) forceCloseZkConn() bool {
 
 func (z *ZkServant) reconnectUntilSuccess() {
 	for {
-		z.errorLogger.Printf("try to reconnectUntilSuccess")
+		if z.errorLogger != nil {
+			z.errorLogger.Printf("try to reconnectUntilSuccess")
+		}
 		err := z.Connect()
 		if err == nil {
 			break
 		}
 
-		z.errorLogger.Printf("reconnectUntilSuccess error : %s", err.Error())
+		if z.errorLogger != nil {
+			z.errorLogger.Printf("reconnectUntilSuccess error : %s", err.Error())
+		}
 		time.Sleep(time.Second)
 	}
 }
