@@ -189,6 +189,7 @@ func (z *ZkServant) forceCloseZkConn() bool {
 
 func (z *ZkServant) reconnectUntilSuccess() {
 	for {
+		z.errorLogger.Printf("try to reconnectUntilSuccess")
 		err := z.Connect()
 		if err == nil {
 			break
