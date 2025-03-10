@@ -118,9 +118,6 @@ func (z *ZkServant) Connect() error {
 }
 
 func (z *ZkServant) Close() {
-	z.mutex.Lock()
-	defer z.mutex.Unlock()
-
 	z.forceCloseZkConn()
 	z.pathSet = nil
 }
@@ -176,6 +173,9 @@ func (z *ZkServant) processZkEvent(event zk.Event) bool {
 }
 
 func (z *ZkServant) forceCloseZkConn() bool {
+	z.mutex.Lock()
+	defer z.mutex.Unlock()
+
 	if z.zkConn == nil {
 		return false
 	}
@@ -194,7 +194,9 @@ func (z *ZkServant) reconnectUntilSuccess() {
 			break
 		}
 
-		z.errorLogger.Printf("reconnectUntilSuccess error : %s", err.Error())
+		if z.errorLogger != nil {
+			z.errorLogger.Printf("reconnectUntilSuccess error : %s", err.Error())
+		}
 		time.Sleep(time.Second)
 	}
 }
