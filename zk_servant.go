@@ -118,9 +118,6 @@ func (z *ZkServant) Connect() error {
 }
 
 func (z *ZkServant) Close() {
-	z.mutex.Lock()
-	defer z.mutex.Unlock()
-
 	z.forceCloseZkConn()
 	z.pathSet = nil
 }
@@ -176,9 +173,9 @@ func (z *ZkServant) processZkEvent(event zk.Event) bool {
 }
 
 func (z *ZkServant) forceCloseZkConn() bool {
-	if z.errorLogger != nil {
-		z.errorLogger.Printf("forceCloseZkConn")
-	}
+	z.mutex.Lock()
+	defer z.mutex.Unlock()
+
 	if z.zkConn == nil {
 		return false
 	}
