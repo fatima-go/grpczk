@@ -3,7 +3,7 @@ module github.com/fatima-go/grpczk
 go 1.17
 
 require (
-	github.com/go-zookeeper/zk v1.0.3
+	github.com/go-zookeeper/zk v1.0.4
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.59.0
 )
