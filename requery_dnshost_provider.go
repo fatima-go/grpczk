@@ -50,8 +50,8 @@ type lookupTimeoutOption struct {
 
 // WithLookupTimeout returns a RequeryDNSHostProviderOption that sets the lookup timeout.
 func WithLookupTimeout(timeout time.Duration) RequeryDNSHostProviderOption {
-	if timeout < 0 {
-		timeout = _defaultLookupTimeout // minimum
+	if timeout < time.Second {
+		timeout = time.Second // minimum
 	}
 
 	return lookupTimeoutOption{
