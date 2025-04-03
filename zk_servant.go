@@ -58,6 +58,7 @@ type ZkServant struct {
 	debugging        bool
 	pathSet          map[string]struct{}
 	sessionAvailable bool
+	hostProvider     *RequeryDNSHostProvider
 }
 
 func NewZkServant(zkIpList string) *ZkServant {
@@ -96,6 +97,10 @@ func (z *ZkServant) Connect() error {
 	var conn *zk.Conn
 	var eventChan <-chan zk.Event
 	var err error
+
+	if z.hostProvider != nil {
+		z.hostProvider.Close()
+	}
 	hostProvider := NewRequeryDNSHostProvider()
 
 	if z.debugging {

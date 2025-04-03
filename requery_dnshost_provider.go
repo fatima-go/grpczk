@@ -108,6 +108,14 @@ func NewRequeryDNSHostProvider(options ...RequeryDNSHostProviderOption) *Requery
 	return &provider
 }
 
+func (hp *RequeryDNSHostProvider) Close() {
+	if hp.dnsRequeryTicker != nil {
+		zk.DefaultLogger.Printf("dnsRequeryTicker closing")
+		hp.dnsRequeryTicker.Stop()
+		hp.dnsRequeryTicker = nil
+	}
+}
+
 // Init is called first, with the servers specified in the connection
 // string. It uses DNS to look up addresses for each server, then
 // shuffles them all together.
