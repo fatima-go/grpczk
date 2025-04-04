@@ -101,6 +101,11 @@ func hasServiceResolver(serviceName string) bool {
 }
 
 func updateServerList(serviceName string, newServerList []string) error {
+	if len(newServerList) == 0 {
+		zk.DefaultLogger.Printf("updateServerList is empty")
+		return nil // grpc server 목록이 비어 있다면 그대로 리턴
+	}
+
 	rmu.Lock()
 	defer rmu.Unlock()
 

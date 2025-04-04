@@ -3,6 +3,9 @@ apache zookeeper 를 통해서 advertise 된 grpc 서버의 정보를 실시간�
 
 # release #
 
+2025.04.03 v1.1.0
+- [Zookeeper 서버의 IP 가 변경되었을때 대응 로직 추가](https://github.com/fatima-go/grpczk/issues/19)
+
 2025.03.10 v1.0.9
 - [명시적 Close() 처리시 별도 이벤트 처리 go func에 의한 오동작 수정](https://github.com/fatima-go/grpczk/issues/17)
 
