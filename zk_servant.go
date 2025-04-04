@@ -101,12 +101,12 @@ func (z *ZkServant) Connect() error {
 	if z.hostProvider != nil {
 		z.hostProvider.Close()
 	}
-	hostProvider := NewRequeryDNSHostProvider()
+	z.hostProvider = NewRequeryDNSHostProvider()
 
 	if z.debugging {
-		conn, eventChan, err = zk.Connect(z.ipList, time.Second, zk.WithHostProvider(hostProvider))
+		conn, eventChan, err = zk.Connect(z.ipList, time.Second, zk.WithHostProvider(z.hostProvider))
 	} else {
-		conn, eventChan, err = zk.Connect(z.ipList, time.Second, zk.WithLogInfo(false), zk.WithHostProvider(hostProvider))
+		conn, eventChan, err = zk.Connect(z.ipList, time.Second, zk.WithLogInfo(false), zk.WithHostProvider(z.hostProvider))
 	}
 	if err != nil {
 		return err
