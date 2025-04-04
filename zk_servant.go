@@ -93,6 +93,8 @@ func (z *ZkServant) Connect() error {
 		return nil
 	}
 
+	zk.DefaultLogger.Printf("ZkServant.Connect...")
+
 	//(*Conn, <-chan Event, error)
 	var conn *zk.Conn
 	var eventChan <-chan zk.Event
