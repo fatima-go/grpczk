@@ -193,6 +193,10 @@ func (z *ZkServant) forceCloseZkConn() bool {
 	z.zkConn = nil
 	z.sessionAvailable = false
 	z.state = zk.StateDisconnected
+	if z.hostProvider != nil {
+		z.hostProvider.Close()
+		z.hostProvider = nil
+	}
 	return true
 }
 

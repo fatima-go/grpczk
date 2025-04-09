@@ -3,6 +3,9 @@ apache zookeeper 를 통해서 advertise 된 grpc 서버의 정보를 실시간�
 
 # release #
 
+2025.04.08 v1.2.0
+- [ZkServant.Close() 시에 hostProvider ticker 종료](https://github.com/fatima-go/grpczk/issues/21)
+
 2025.04.03 v1.1.0
 - [Zookeeper 서버의 IP 가 변경되었을때 대응 로직 추가](https://github.com/fatima-go/grpczk/issues/19)
 
