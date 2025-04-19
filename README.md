@@ -3,6 +3,9 @@ apache zookeeper 를 통해서 advertise 된 grpc 서버의 정보를 실시간�
 
 # release #
 
+2025.04.19 v1.2.1
+- LICENSE.md 파일 추가
+
 2025.04.08 v1.2.0
 - [ZkServant.Close() 시에 hostProvider ticker 종료](https://github.com/fatima-go/grpczk/issues/21)
 
